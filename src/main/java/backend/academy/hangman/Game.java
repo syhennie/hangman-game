@@ -1,28 +1,37 @@
 package backend.academy.hangman;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Класс Game реализует основную логику игры "Виселица".
- * Он управляет процессом игры, включая выбор категорий, уровня сложности, обработку ошибок
- * и отображение подсказок.
- */
 public class Game {
-    static int errorCount;              // Текущее количество ошибок
-    static int errorMax;                // Максимальное количество допустимых ошибок
-    static List<Character> errorChar;   // Список неверно указанных букв
-    static String secretWordView;       // Текущее отображение загаданного слова (с угаданными буквами)
-    static Scaffold scaffold;           // Текущее состояние виселицы
+    public int errorCount;
+    private int errorMax;
+    public final List<Character> errorChar;
+    public String secretWordView;
+    private Scaffold scaffold;
+    private final UserInterface ui;
+    private final WordRepository wordRepository;
+    private String[] scaffoldStates;
+    private boolean hintShown;
+    private static final int EASY_ATTEMPTS = 6;
+    private static final int MEDIUM_ATTEMPTS = 4;
+    private static final int HARD_ATTEMPTS = 3;
+    private static final String ZERO = "ZERO";
+    private static final String ONE = "ONE";
+    private static final String TWO = "TWO";
+    private static final String THREE = "THREE";
+    private static final String FOUR = "FOUR";
+    private static final String FIVE = "FIVE";
+    private static final String SIX = "SIX";
+    private static final String SEVEN = "SEVEN";
+    private static final List<String> ALL_DIFFICULTY = List.of("легкий", "средний", "сложный");
 
-    protected UserInterface ui;     // Объект для взаимодействия с пользователем
-    private final WordRepository wordRepository; // Хранилище слов для выбора случайного слова
-    private String[] scaffoldStates;    // Массив состояний виселицы для выбранного уровня сложности
-    private boolean hintShown;          // Флаг, указывающий, была ли показана подсказка
-
-    public Game() {
-        ui = new UserInterface();
-        wordRepository = new WordRepository();
-        hintShown = false;
+    public Game(UserInterface ui) {
+        this.ui = ui;
+        this.wordRepository = new WordRepository();
+        this.hintShown = false;
+        this.errorChar = new ArrayList<>();
+        this.errorCount = 0;
     }
 
     public void printWelcomeMessage() {
@@ -31,13 +40,13 @@ public class Game {
 
     public String chooseCategory() {
         String category = ui.getInput("Выберите категорию: технологии, страны, животные");
+        List<String> allCategory = List.of("технологии", "страны", "животные");
         if (category == null || category.isEmpty()) {
             ui.displayMessage("Выбрана категория по умолчанию.");
-            category = "технологии"; // Категория по умолчанию
+            category = allCategory.getFirst(); // Категория по умолчанию
         }
         category = category.toLowerCase();
-
-        if (!category.equals("технологии") && !category.equals("страны") && !category.equals("животные")) {
+        if (!allCategory.contains(category)) {
             throw new IllegalArgumentException("Недопустимая категория: " + category);
         }
         return category;
@@ -56,151 +65,121 @@ public class Game {
         String difficulty = ui.getInput("Выберите уровень сложности: легкий, средний, сложный");
         if (difficulty == null || difficulty.isEmpty()) {
             ui.displayMessage("Выбрана сложность по умолчанию.");
-            difficulty = "средний"; // Сложность по умолчанию
+            difficulty = ALL_DIFFICULTY.getFirst(); // Сложность по умолчанию
         }
         difficulty = difficulty.toLowerCase();
-
-        if (!difficulty.equals("легкий") && !difficulty.equals("средний") && !difficulty.equals("сложный")) {
+        if (!ALL_DIFFICULTY.contains(difficulty)) {
             throw new IllegalArgumentException("Недопустимый уровень сложности: " + difficulty);
         }
         return difficulty;
     }
 
-    public int getAttempt(String difficulty) {
-        return switch (difficulty) {
-            case "легкий" -> 6;
-            case "средний" -> 4;
-            case "сложный" -> 3;
-            default -> throw new IllegalArgumentException("Недопустимый уровень сложности: " + difficulty);
+    public int getAttemptsForDifficulty(String difficulty) {
+        int index = ALL_DIFFICULTY.indexOf(difficulty);
+        return switch (index) {
+            case 1 -> MEDIUM_ATTEMPTS;
+            case 2 -> HARD_ATTEMPTS;
+            default -> EASY_ATTEMPTS;
         };
     }
 
-    private void setScaffoldStates(String difficulty) {
-        switch (difficulty) {
-            case "легкий":
-                scaffoldStates = new String[] {"ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX"};
-                break;
-            case "средний":
-                scaffoldStates = new String[] {"ZERO", "ONE", "TWO", "THREE", "SIX"};
-                break;
-            case "сложный":
-                scaffoldStates = new String[] {"ZERO", "THREE", "SIX"};
-                break;
-            default:
-                throw new IllegalArgumentException("Недопустимый уровень сложности: " + difficulty);
+    void setScaffoldStates(String difficulty) {
+        if (difficulty.equals(ALL_DIFFICULTY.getFirst())) {
+            scaffoldStates = new String[] {ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN};
+        } else if (difficulty.equals(ALL_DIFFICULTY.get(1))) {
+            scaffoldStates = new String[] {TWO, FOUR, FIVE, SIX, SEVEN};
+        } else {
+            scaffoldStates = new String[] {TWO, FIVE, SEVEN};
         }
     }
 
-    /**
-     * Основной метод, запускающий процесс игры.
-     * Обрабатывает выбор категории, сложности и выполнение игровых действий,
-     * включая ввод букв и показ подсказок.
-     */
-    public void start() {
-        errorCount = 0; // Обнуление счётчика ошибок
-        errorChar = new ArrayList<>(); // Инициализация списка ошибок
-        hintShown = false; // Сброс флага для новой игры
+    private void updateScaffold() {
+        scaffold = Scaffold.valueOf(scaffoldStates[Math.min(errorCount, scaffoldStates.length - 1)]);
+    }
 
-        printWelcomeMessage(); // Приветственное сообщение
+    public void start() {
+        printWelcomeMessage();
         String category;
         try {
-            category = chooseCategory(); // Выбор категории
+            category = chooseCategory();
         } catch (IllegalArgumentException e) {
             ui.displayMessage(e.getMessage());
             return;
         }
+        String difficulty = chooseDifficulty();
+        errorMax = getAttemptsForDifficulty(difficulty);
+        setScaffoldStates(difficulty);
+        Word secretWord = chooseRandomWord(category);
+        secretWordView = "_".repeat(secretWord.word().length());
+        updateScaffold();
 
-        String difficulty;
-        try {
-            difficulty = chooseDifficulty(); // Выбор сложности
-        } catch (IllegalArgumentException e) {
-            ui.displayMessage(e.getMessage());
-            return;
-        }
-
-        errorMax = getAttempt(difficulty); // Получение допустимого количества ошибок
-        setScaffoldStates(difficulty); // Настройка состояний виселицы
-        Word secretWord = chooseRandomWord(category); // Выбор случайного слова
-
-        if (secretWord == null) {
-            return; // Прекращаем игру, если слово не найдено
-        }
-
-        scaffold = Scaffold.valueOf(scaffoldStates[Math.min(errorCount, scaffoldStates.length - 1)]);
-        secretWordView = "_".repeat(secretWord.word().length()); // Отображение скрытого слова
-        boolean isNotWin = true;
-
-        // Основной цикл игры
-        while (isNotWin) {
-            System.out.println(scaffold);
-            System.out.println("Загаданное слово:  " + secretWordView);
-            System.out.println("Оставшиеся попытки: " + (errorMax - errorCount));
-            System.out.println("Ошибки  (" + errorCount + "): " + errorChar);
-            System.out.println("Введите букву или ! для показа подсказки:");
-
+        boolean isGameActive = true;
+        while (isGameActive) {
+            ui.displayMessage(scaffold.toString());
+            ui.displayMessage("Загаданное слово:  " + secretWordView);
+            ui.displayMessage("Оставшиеся попытки: " + (errorMax - errorCount));
+            ui.displayMessage("Ошибки  (" + errorCount + "): " + errorChar);
+            ui.displayMessage("Введите букву или ! для показа подсказки:");
             String input = ui.getInput("").toLowerCase();
-
             if (input.isEmpty()) {
                 ui.displayMessage("Ввод не может быть пустым.");
-                continue; // Пропускаем итерацию, ждем следующего ввода
+                continue;
             }
-
-            // Проверка на запрос подсказки
-            if ("!".equals(input)) {
-                if (!hintShown) {
-                    ui.displayMessage("Подсказка: " + secretWord.hint());
-                    hintShown = true;
-                } else {
-                    ui.displayMessage("Подсказка уже была показана.");
+            if (processInput(input, secretWord)) {
+                if (!secretWordView.contains("_")) {
+                    isGameActive = false;
                 }
-                continue; // Пропускаем итерацию, ждем следующего ввода
-            }
-
-            // Проверка на ввод буквы
-            if (input.length() == 1) {
-                Character inputCharacter = input.charAt(0);
-
-                if (!Character.isLetter(inputCharacter)) {
-                    ui.displayMessage("Пожалуйста, введите только букву.");
-                    continue;
+                if (errorCount >= errorMax) {
+                    isGameActive = false;
                 }
-
-                if (secretWord.word().contains(String.valueOf(inputCharacter))) {
-                    char[] tempView = secretWordView.toCharArray();
-
-                    for (int i = 0; i < secretWord.word().length(); i++) {
-                        if (secretWord.word().charAt(i) == inputCharacter) {
-                            tempView[i] = inputCharacter;
-                        }
-                    }
-
-                    secretWordView = new String(tempView);
-                    if (!secretWordView.contains("_")) {
-                        isNotWin = false;
-                    }
-                } else {
-                    if (errorChar.contains(inputCharacter)) {
-                        ui.displayMessage("Вы уже вводили эту букву. Неверно.");
-                    } else {
-                        errorChar.add(inputCharacter);
-                        errorCount++;
-                    }
-
-                    if (errorCount < scaffoldStates.length) {
-                        scaffold = Scaffold.valueOf(scaffoldStates[Math.min(errorCount, scaffoldStates.length - 1)]);
-                    }
-
-                    if (errorCount >= errorMax) {
-                        isNotWin = false;
-                    }
-                }
-            } else {
-                ui.displayMessage("Пожалуйста, введите только одну букву.");
             }
         }
 
+        displayEndMessage(secretWord);
+    }
+
+    protected boolean processInput(String input, Word secretWord) {
+        if ("!".equals(input)) {
+            if (!hintShown) {
+                ui.displayMessage("Подсказка: " + secretWord.hint());
+                hintShown = true;
+            } else {
+                ui.displayMessage("Подсказка уже была показана.");
+            }
+            return false;
+        }
+
+        if (input.length() == 1 && Character.isLetter(input.charAt(0))) {
+            return processLetter(input.charAt(0), secretWord);
+        } else {
+            ui.displayMessage("Пожалуйста, введите одну букву.");
+            return false;
+        }
+    }
+
+    protected boolean processLetter(char letter, Word secretWord) {
+        if (secretWord.word().contains(String.valueOf(letter))) {
+            char[] tempView = secretWordView.toCharArray();
+            for (int i = 0; i < secretWord.word().length(); i++) {
+                if (secretWord.word().charAt(i) == letter) {
+                    tempView[i] = letter;
+                }
+            }
+            secretWordView = new String(tempView);
+        } else {
+            if (!errorChar.contains(letter)) {
+                errorChar.add(letter);
+                errorCount++;
+                updateScaffold();
+            } else {
+                ui.displayMessage("Вы уже вводили эту букву. Неверно.");
+            }
+        }
+        return true;
+    }
+
+    private void displayEndMessage(Word secretWord) {
         ui.displayMessage("\nЗагаданное слово: " + secretWord.word());
-        // Вывод результата игры
         if (errorCount < errorMax) {
             ui.displayMessage("Поздравляем! Вы выиграли!\n");
         } else {

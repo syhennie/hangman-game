@@ -17,13 +17,15 @@ class WordTest {
 
     @Test
     void testConstructor_NullWord() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new Word(null, "подсказка"));
+        IllegalArgumentException exception =
+            assertThrows(IllegalArgumentException.class, () -> new Word(null, "подсказка"));
         assertEquals("Слово и подсказка не могут быть null.", exception.getMessage());
     }
 
     @Test
     void testConstructor_NullHint() {
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> new Word("слово", null));
+        IllegalArgumentException exception =
+            assertThrows(IllegalArgumentException.class, () -> new Word("слово", null));
         assertEquals("Слово и подсказка не могут быть null.", exception.getMessage());
     }
 

@@ -2,98 +2,189 @@ package backend.academy.hangman;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.*;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 
-class GameTest {
+public class GameTest {
+
+    private UserInterface ui;
     private Game game;
+    private ByteArrayOutputStream outputStream;
 
     @BeforeEach
-    void setUp() {
-        game = new Game();
+    public void setUp() {
+        outputStream = new ByteArrayOutputStream();
+        ui = new UserInterface(new PrintStream(outputStream));
+        game = new Game(ui);
     }
 
     @Test
-    void testPrintWelcomeMessage() {
-        assertDoesNotThrow(() -> game.printWelcomeMessage());
+    public void testPrintWelcomeMessage() {
+        // Arrange
+
+        // Act
+        game.printWelcomeMessage();
+        String output = outputStream.toString().trim();
+
+        // Assert
+        assertEquals("Добро пожаловать в игру Виселица!", output);
     }
 
     @Test
-    void testChooseCategory_ValidInput() {
-        String category = "страны";
-        game.ui = new UserInterface() {
+    public void testChooseCategory_ValidInput() {
+        // Arrange
+        String input = "страны";
+        ui = new UserInterface(new PrintStream(outputStream)) {
             @Override
             public String getInput(String prompt) {
-                return category;
+                return input;
             }
         };
-        assertEquals("страны", game.chooseCategory());
+        game = new Game(ui);
+
+        // Act
+        String category = game.chooseCategory();
+
+        // Assert
+        assertEquals("страны", category);
     }
 
     @Test
-    void testChooseCategory_InvalidInput() {
-        String category = "недопустимая категория";
-        game.ui = new UserInterface() {
+    public void testChooseCategory_InvalidInput() {
+        // Arrange
+        String input = "музыка";
+        ui = new UserInterface(new PrintStream(outputStream)) {
             @Override
             public String getInput(String prompt) {
-                return category;
+                return input;
             }
         };
-        assertThrows(IllegalArgumentException.class, game::chooseCategory);
+        game = new Game(ui);
+
+        // Act & Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, game::chooseCategory);
+        assertEquals("Недопустимая категория: музыка", exception.getMessage());
     }
 
     @Test
-    void testChooseRandomWord_ValidCategory() {
-        game.ui = new UserInterface() {
+    public void testChooseDifficulty_ValidInput() {
+        // Arrange
+        String input = "средний";
+        ui = new UserInterface(new PrintStream(outputStream)) {
             @Override
             public String getInput(String prompt) {
-                return "технологии";
+                return input;
             }
         };
-        Word word = game.chooseRandomWord("технологии");
-        assertNotNull(word);
-        assertFalse(word.word().isEmpty());
+        game = new Game(ui);
+
+        // Act
+        String difficulty = game.chooseDifficulty();
+
+        // Assert
+        assertEquals("средний", difficulty);
     }
 
     @Test
-    void testChooseDifficulty_ValidInput() {
-        String difficulty = "сложный";
-        game.ui = new UserInterface() {
+    public void testChooseDifficulty_InvalidInput() {
+        // Arrange
+        String input = "эксперт";
+        ui = new UserInterface(new PrintStream(outputStream)) {
             @Override
             public String getInput(String prompt) {
-                return difficulty;
+                return input;
             }
         };
-        assertEquals("сложный", game.chooseDifficulty());
+        game = new Game(ui);
+
+        // Act & Assert
+        Exception exception = assertThrows(IllegalArgumentException.class, game::chooseDifficulty);
+        assertEquals("Недопустимый уровень сложности: эксперт", exception.getMessage());
     }
 
     @Test
-    void testChooseDifficulty_InvalidInput() {
-        String difficulty = "недопустимый уровень";
-        game.ui = new UserInterface() {
+    public void testGetAttemptsForDifficulty() {
+        // Arrange & Act
+        int easyAttempts = game.getAttemptsForDifficulty("легкий");
+        int mediumAttempts = game.getAttemptsForDifficulty("средний");
+        int hardAttempts = game.getAttemptsForDifficulty("сложный");
+
+        // Assert
+        assertEquals(6, easyAttempts);
+        assertEquals(4, mediumAttempts);
+        assertEquals(3, hardAttempts);
+    }
+
+    @Test
+    public void testProcessInput_HintRequest() {
+        // Arrange
+        Word testWord = new Word("тест", "подсказка");
+        game = new Game(ui) {
+            @Override
+            public Word chooseRandomWord(String category) {
+                return testWord;
+            }
+        };
+        String input = "!";
+        ui = new UserInterface(new PrintStream(outputStream)) {
             @Override
             public String getInput(String prompt) {
-                return difficulty;
+                return input;
             }
         };
-        assertThrows(IllegalArgumentException.class, game::chooseDifficulty);
+
+        // Act
+        boolean result = game.processInput(input, testWord);
+        String output = outputStream.toString().trim();
+
+        // Assert
+        assertFalse(result);
+        assertTrue(output.contains("Подсказка: подсказка"));
     }
 
     @Test
-    void testGetAttempt() {
-        assertEquals(6, game.getAttempt("легкий"));
-        assertEquals(4, game.getAttempt("средний"));
-        assertEquals(3, game.getAttempt("сложный"));
-    }
-
-    @Test
-    void testStart() {
-        game.ui = new UserInterface() {
+    public void testProcessLetter_CorrectLetter() {
+        // Arrange
+        Word testWord = new Word("тест", "подсказка");
+        game = new Game(ui) {
             @Override
-            public String getInput(String prompt) {
-                return "технологии"; // выберем категорию
+            public Word chooseRandomWord(String category) {
+                return testWord;
             }
         };
-        assertDoesNotThrow(game::start);
+        game.secretWordView = "_ест";
+        game.setScaffoldStates("легкий");
+        String input = "т";
+
+        // Act
+        boolean result = game.processLetter(input.charAt(0), testWord);
+
+        // Assert
+        assertTrue(result);
+        assertEquals("тест", game.secretWordView);
+    }
+
+    @Test
+    public void testProcessLetter_IncorrectLetter() {
+        // Arrange
+        Word testWord = new Word("тест", "подсказка");
+        game = new Game(ui) {
+            @Override
+            public Word chooseRandomWord(String category) {
+                return testWord;
+            }
+        };
+        game.secretWordView = "____";
+        game.setScaffoldStates("легкий");
+        String input = "к";
+
+        // Act
+        boolean result = game.processLetter(input.charAt(0), testWord);
+
+        // Assert
+        assertTrue(result);
+        assertTrue(game.errorChar.contains('к'));
+        assertEquals(1, game.errorCount);
     }
 }

@@ -1,6 +1,10 @@
 package backend.academy.hangman;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+
 
 public class WordRepository {
     private final Map<String, List<Word>> wordCategories;

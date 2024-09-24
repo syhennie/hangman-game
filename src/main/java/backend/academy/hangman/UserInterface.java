@@ -1,24 +1,23 @@
 package backend.academy.hangman;
 
+import java.io.PrintStream;
 import java.util.Scanner;
 
-/**
- * Класс UserInterface предоставляет методы для взаимодействия с пользователем.
- * Он позволяет выводить сообщения и получать ввод от пользователя с помощью консоли.
- */
 public class UserInterface {
     private final Scanner scanner;
+    private final PrintStream output;
 
-    public UserInterface() {
-        scanner = new Scanner(System.in);
+    public UserInterface(PrintStream output) {
+        this.output = output;
+        this.scanner = new Scanner(System.in);
     }
 
     public String getInput(String prompt) {
-        System.out.println(prompt);
+        output.println(prompt);
         return scanner.nextLine();
     }
 
     public void displayMessage(String message) {
-        System.out.println(message);
+        output.println(message);
     }
 }

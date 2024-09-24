@@ -1,37 +1,48 @@
 package backend.academy.hangman;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.PrintStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class UserInterfaceTest {
-    private final InputStream originalSystemIn = System.in;
-    private final PrintStream originalSystemOut = System.out;
-    private UserInterface ui;
+public class UserInterfaceTest {
 
-    @BeforeEach
-    void setUp() {
-        ui = new UserInterface();
-    }
+    @Test
+    public void testGetInput() {
+        // Arrange
+        String simulatedUserInput = "Тестовый ввод\n";
+        ByteArrayInputStream inputStream = new ByteArrayInputStream(simulatedUserInput.getBytes());
+        System.setIn(inputStream);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream(outputStream);
+        UserInterface ui = new UserInterface(printStream);
 
-    @AfterEach
-    void restoreSystemInputOutput() {
-        System.setIn(originalSystemIn);
-        System.setOut(originalSystemOut);
+        // Act
+        String input = ui.getInput("Введите что-нибудь:");
+
+        // Assert
+        String expectedOutput = "Введите что-нибудь:" + System.lineSeparator();
+        assertEquals("Тестовый ввод", input.trim());
+        assertEquals(expectedOutput, outputStream.toString());
     }
 
     @Test
-    void testDisplayMessage() {
+    public void testDisplayMessage() {
+        // Arrange
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        PrintStream printStream = new PrintStream(outputStream);
+
+        UserInterface ui = new UserInterface(printStream);
         String message = "Сообщение для отображения";
-        ByteArrayOutputStream outContent = new ByteArrayOutputStream();
-        System.setOut(new PrintStream(outContent));
+
+        // Act
         ui.displayMessage(message);
-        assertEquals(message + System.lineSeparator(), outContent.toString());
+
+        // Assert
+        String expectedOutput = message + System.lineSeparator();
+        assertEquals(expectedOutput, outputStream.toString());
     }
 }
