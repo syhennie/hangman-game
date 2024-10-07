@@ -17,7 +17,6 @@ public class Main {
                 game.start();
             } else if (select == '1') {
                 ui.displayMessage("Выход из приложения.");
-                //System.exit(0);
                 break;
             } else {
                 ui.displayMessage("Сделайте выбор ещё раз.");

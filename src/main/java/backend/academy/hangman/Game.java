@@ -1,18 +1,12 @@
 package backend.academy.hangman;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 public class Game {
-    public int errorCount;
-    private int errorMax;
-    public final List<Character> errorChar;
-    public String secretWordView;
-    private Scaffold scaffold;
-    private final UserInterface ui;
-    private final WordRepository wordRepository;
-    private String[] scaffoldStates;
-    private boolean hintShown;
     private static final int EASY_ATTEMPTS = 6;
     private static final int MEDIUM_ATTEMPTS = 4;
     private static final int HARD_ATTEMPTS = 3;
@@ -24,6 +18,15 @@ public class Game {
     private static final String FIVE = "FIVE";
     private static final String SIX = "SIX";
     private static final String SEVEN = "SEVEN";
+    protected int errorCount;
+    protected int errorMax;
+    protected final List<Character> errorChar;
+    protected String secretWordView;
+    protected Scaffold scaffold;
+    private final UserInterface ui;
+    protected final WordRepository wordRepository;
+    protected String[] scaffoldStates;
+    private boolean hintShown;
     private static final List<String> ALL_DIFFICULTY = List.of("легкий", "средний", "сложный");
 
     public Game(UserInterface ui) {
@@ -38,41 +41,45 @@ public class Game {
         ui.displayMessage("Добро пожаловать в игру Виселица!");
     }
 
-    public String chooseCategory() {
-        String category = ui.getInput("Выберите категорию: технологии, страны, животные");
-        List<String> allCategory = List.of("технологии", "страны", "животные");
-        if (category == null || category.isEmpty()) {
-            ui.displayMessage("Выбрана категория по умолчанию.");
-            category = allCategory.getFirst(); // Категория по умолчанию
-        }
-        category = category.toLowerCase();
-        if (!allCategory.contains(category)) {
-            throw new IllegalArgumentException("Недопустимая категория: " + category);
-        }
-        return category;
-    }
-
-    public Word chooseRandomWord(String category) {
-        Word randomWord = wordRepository.getRandomWordByCategory(category);
+    public Word chooseRandomWord(String category, String difficulty) {
+        Word randomWord = wordRepository.getRandomWordByCategoryAndDifficulty(category, difficulty);
         if (randomWord == null) {
-            ui.displayMessage("Категория не найдена. Попробуйте снова.");
+            ui.displayMessage("Категория или уровень сложности не найдены. Попробуйте снова.");
             return null;
         }
         return randomWord;
     }
 
-    public String chooseDifficulty() {
-        String difficulty = ui.getInput("Выберите уровень сложности: легкий, средний, сложный");
-        if (difficulty == null || difficulty.isEmpty()) {
-            ui.displayMessage("Выбрана сложность по умолчанию.");
-            difficulty = ALL_DIFFICULTY.getFirst(); // Сложность по умолчанию
+    public String chooseOption(Set<String> availableOptions, String message) {
+        String optionsList = String.join(", ", availableOptions);
+        String input = ui.getInput(message + " (Enter для случайного выбора): " + optionsList);
+        if (input.isBlank()) {
+            String randomOption = getRandomOption(availableOptions);
+            ui.displayMessage("Выбрано по умолчанию: " + randomOption);
+            return randomOption;
+        } else {
+            while (!availableOptions.contains(input.toLowerCase())) {
+                input = ui.getInput("Некорректный выбор. " + message + ": " + optionsList);
+            }
         }
-        difficulty = difficulty.toLowerCase();
-        if (!ALL_DIFFICULTY.contains(difficulty)) {
-            throw new IllegalArgumentException("Недопустимый уровень сложности: " + difficulty);
-        }
-        return difficulty;
+
+        return input.toLowerCase();
     }
+
+    private String getRandomOption(Set<String> options) {
+        List<String> optionList = new ArrayList<>(options);
+        return optionList.get(new Random().nextInt(optionList.size()));
+    }
+
+    public String chooseCategory() {
+        Set<String> availableCategories = wordRepository.getAvailableCategories();
+        return chooseOption(availableCategories, "Выберите категорию");
+    }
+
+    public String chooseDifficulty() {
+        return chooseOption(new HashSet<>(ALL_DIFFICULTY), "Выберите уровень сложности");
+    }
+
 
     public int getAttemptsForDifficulty(String difficulty) {
         int index = ALL_DIFFICULTY.indexOf(difficulty);
@@ -93,7 +100,7 @@ public class Game {
         }
     }
 
-    private void updateScaffold() {
+    protected void updateScaffold() {
         scaffold = Scaffold.valueOf(scaffoldStates[Math.min(errorCount, scaffoldStates.length - 1)]);
     }
 
@@ -109,12 +116,11 @@ public class Game {
         String difficulty = chooseDifficulty();
         errorMax = getAttemptsForDifficulty(difficulty);
         setScaffoldStates(difficulty);
-        Word secretWord = chooseRandomWord(category);
+        Word secretWord = chooseRandomWord(category, difficulty);
         secretWordView = "_".repeat(secretWord.word().length());
         updateScaffold();
 
-        boolean isGameActive = true;
-        while (isGameActive) {
+        while (true) {
             ui.displayMessage(scaffold.toString());
             ui.displayMessage("Загаданное слово:  " + secretWordView);
             ui.displayMessage("Оставшиеся попытки: " + (errorMax - errorCount));
@@ -127,14 +133,13 @@ public class Game {
             }
             if (processInput(input, secretWord)) {
                 if (!secretWordView.contains("_")) {
-                    isGameActive = false;
+                    break;
                 }
                 if (errorCount >= errorMax) {
-                    isGameActive = false;
+                    break;
                 }
             }
         }
-
         displayEndMessage(secretWord);
     }
 
@@ -149,10 +154,11 @@ public class Game {
             return false;
         }
 
-        if (input.length() == 1 && Character.isLetter(input.charAt(0))) {
+        // добавлена проверка на русскую букву
+        if (input.length() == 1 && Character.isLetter(input.charAt(0)) && input.matches("[а-яА-Я]")) {
             return processLetter(input.charAt(0), secretWord);
         } else {
-            ui.displayMessage("Пожалуйста, введите одну букву.");
+            ui.displayMessage("Пожалуйста, введите одну букву русского языка.");
             return false;
         }
     }
@@ -172,13 +178,13 @@ public class Game {
                 errorCount++;
                 updateScaffold();
             } else {
-                ui.displayMessage("Вы уже вводили эту букву. Неверно.");
+                ui.displayMessage("Эта буква уже была использована."); // =)
             }
         }
         return true;
     }
 
-    private void displayEndMessage(Word secretWord) {
+    protected void displayEndMessage(Word secretWord) {
         ui.displayMessage("\nЗагаданное слово: " + secretWord.word());
         if (errorCount < errorMax) {
             ui.displayMessage("Поздравляем! Вы выиграли!\n");
