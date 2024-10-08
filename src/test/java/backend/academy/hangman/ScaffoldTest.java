@@ -1,161 +1,118 @@
 package backend.academy.hangman;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ScaffoldTest {
+class ScaffoldTest {
+    private Scaffold scaffold;
 
-    @Test
-    public void testScaffoldZeroToString() {
-        // Arrange
-        Scaffold scaffold = Scaffold.ZERO;
-
-        // Act
-        String result = scaffold.toString();
-
-        // Assert
-        assertEquals("""
-                     _______
-                     |/
-                     |
-                     |
-                     |
-                     |
-                    _|_""", result);
+    @BeforeEach
+    void setUp() {
+        scaffold = new Scaffold();  // Инициализация Scaffold перед каждым тестом
     }
 
     @Test
-    public void testScaffoldOneToString() {
-        // Arrange
-        Scaffold scaffold = Scaffold.ONE;
-
-        // Act
-        String result = scaffold.toString();
-
-        // Assert
-        assertEquals("""
-                     _______
-                     |/    |
-                     |
-                     |
-                     |
-                     |
-                    _|_""", result);
+    void testInitialScaffoldState() {
+        String expected =
+            "  ________\n" +
+                "  |/      \n" +
+                "  |       \n" +
+                "  |        \n" +
+                "  |         \n" +
+                "  |          \n" +
+                "__|__      \n";
+        assertEquals(expected, scaffold.getScaffold(0));
     }
 
     @Test
-    public void testScaffoldTwoToString() {
-        // Arrange
-        Scaffold scaffold = Scaffold.TWO;
-
-        // Act
-        String result = scaffold.toString();
-
-        // Assert
-        assertEquals("""
-                     _______
-                     |/    |
-                     |     O
-                     |
-                     |
-                     |
-                    _|_""", result);
+    void testFirstErrorScaffoldState() {
+        String expected =
+            "  ________\n" +
+                "  |      |\n" +
+                "  |       \n" +
+                "  |        \n" +
+                "  |         \n" +
+                "  |          \n" +
+                "__|__      \n";
+        assertEquals(expected, scaffold.getScaffold(1));
     }
 
     @Test
-    public void testScaffoldThreeToString() {
-        // Arrange
-        Scaffold scaffold = Scaffold.THREE;
-
-        // Act
-        String result = scaffold.toString();
-
-        // Assert
-        assertEquals("""
-                     _______
-                     |/    |
-                     |     O
-                     |     |
-                     |
-                     |
-                    _|_""", result);
+    void testSecondErrorScaffoldState() {
+        String expected =
+            "  ________\n" +
+                "  |      |\n" +
+                "  |      O\n" +
+                "  |        \n" +
+                "  |         \n" +
+                "  |          \n" +
+                "__|__      \n";
+        assertEquals(expected, scaffold.getScaffold(2));
     }
 
     @Test
-    public void testScaffoldFourToString() {
-        // Arrange
-        Scaffold scaffold = Scaffold.FOUR;
-
-        // Act
-        String result = scaffold.toString();
-
-        // Assert
-        assertEquals("""
-                     _______
-                     |/    |
-                     |     O
-                     |    /|
-                     |
-                     |
-                    _|_""", result);
+    void testThirdErrorScaffoldState() {
+        String expected =
+            "  ________\n" +
+                "  |      |\n" +
+                "  |      O\n" +
+                "  |      | \n" +
+                "  |         \n" +
+                "  |          \n" +
+                "__|__      \n";
+        assertEquals(expected, scaffold.getScaffold(3));
     }
 
     @Test
-    public void testScaffoldFiveToString() {
-        // Arrange
-        Scaffold scaffold = Scaffold.FIVE;
-
-        // Act
-        String result = scaffold.toString();
-
-        // Assert
-        assertEquals("""
-                     _______
-                     |/    |
-                     |     O
-                     |    /|\\
-                     |
-                     |
-                    _|_""", result);
+    void testFourthErrorScaffoldState() {
+        String expected =
+            "  ________\n" +
+                "  |      |\n" +
+                "  |      O\n" +
+                "  |     /| \n" +
+                "  |         \n" +
+                "  |          \n" +
+                "__|__      \n";
+        assertEquals(expected, scaffold.getScaffold(4));
     }
 
     @Test
-    public void testScaffoldSixToString() {
-        // Arrange
-        Scaffold scaffold = Scaffold.SIX;
-
-        // Act
-        String result = scaffold.toString();
-
-        // Assert
-        assertEquals("""
-                     _______
-                     |/    |
-                     |     O
-                     |    /|\\
-                     |    /
-                     |
-                    _|_""", result);
+    void testFifthErrorScaffoldState() {
+        String expected =
+            "  ________\n" +
+                "  |      |\n" +
+                "  |      O\n" +
+                "  |     /|\\ \n" +
+                "  |         \n" +
+                "  |          \n" +
+                "__|__      \n";
+        assertEquals(expected, scaffold.getScaffold(5));
     }
 
     @Test
-    public void testScaffoldSevenToString() {
-        // Arrange
-        Scaffold scaffold = Scaffold.SEVEN;
+    void testSixthErrorScaffoldState() {
+        String expected =
+            "  ________\n" +
+                "  |      |\n" +
+                "  |      O\n" +
+                "  |     /|\\ \n" +
+                "  |     / \n" +
+                "  |          \n" +
+                "__|__      \n";
+        assertEquals(expected, scaffold.getScaffold(6));
+    }
 
-        // Act
-        String result = scaffold.toString();
-
-        // Assert
-        assertEquals("""
-                     _______
-                     |/    |
-                     |     O
-                     |    /|\\
-                     |    / \\
-                     |
-                    _|_""", result);
+    @Test
+    void testSeventhErrorScaffoldState() {
+        String expected =
+            "  ________\n" +
+                "  |      |\n" +
+                "  |      O\n" +
+                "  |     /|\\ \n" +
+                "  |     / \\ \n" +
+                "  |          \n" +
+                "__|__      \n";
+        assertEquals(expected, scaffold.getScaffold(7));
     }
 }
-

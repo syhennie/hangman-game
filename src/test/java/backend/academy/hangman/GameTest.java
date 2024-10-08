@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.HashSet;
-import java.util.Set;
 
 public class GameTest {
 
@@ -70,13 +68,6 @@ public class GameTest {
     }
 
     @Test
-    public void testGetAttemptsForDifficulty() {
-        assertEquals(6, game.getAttemptsForDifficulty("легкий"));
-        assertEquals(4, game.getAttemptsForDifficulty("средний"));
-        assertEquals(3, game.getAttemptsForDifficulty("сложный"));
-    }
-
-    @Test
     public void testProcessInput_HintRequest() {
         Word secretWord = new Word("тест", "подсказка", 1);
         String input = "!";
@@ -97,26 +88,31 @@ public class GameTest {
 
     @Test
     public void testProcessLetter_IncorrectLetter() {
-        // Инициализация
         Word testWord = new Word("тест", "подсказка", 1);
         game.secretWordView = "____";
         game.errorCount = 0;
-        game.setScaffoldStates("легкий");
-        game.scaffoldStates = new String[]{"ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN"}; // Инициализация для теста
 
-
-        game.updateScaffold();
-        assertEquals(Scaffold.valueOf("ZERO"), game.scaffold);
+        // Обновляем состояние виселицы до старта
+        game.scaffold = new Scaffold();  // Инициализация нового состояния
+        game.scaffold.getScaffold(game.errorCount);
 
         // Вводим неверную букву
         boolean result = game.processLetter('ф', testWord);
 
-
         assertTrue(result);
         assertEquals(1, game.errorCount);
         assertTrue(game.errorChar.contains('ф'));
-        game.updateScaffold();
-        assertEquals(Scaffold.valueOf("ONE"), game.scaffold);
+
+        // Проверка состояния виселицы
+        String expectedScaffold =
+            "  ________\n" +
+                "  |      |\n" +
+                "  |       \n" +
+                "  |        \n" +
+                "  |         \n" +
+                "  |          \n" +
+                "__|__      \n"; // Ожидаемое состояние при 1 ошибке
+        assertEquals(expectedScaffold, game.scaffold.getScaffold(game.errorCount));
     }
 
     @Test
@@ -125,9 +121,6 @@ public class GameTest {
         game.secretWordView = "____";
         game.errorCount = 0;
         game.errorMax = 1;
-
-        game.setScaffoldStates("легкий");
-        game.scaffoldStates = new String[]{"ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN"}; // Инициализация для теста
 
         game.processLetter('т', testWord);
         game.processLetter('е', testWord);
@@ -146,9 +139,6 @@ public class GameTest {
         game.errorCount = 3;
         game.errorMax = 3;
 
-        game.setScaffoldStates("легкий");
-        game.scaffoldStates = new String[]{"ZERO", "ONE", "TWO", "THREE", "FOUR", "FIVE", "SIX", "SEVEN"}; // Инициализация для теста
-
         game.processLetter('к', testWord);
         game.processLetter('ф', testWord);
         game.processLetter('з', testWord);
@@ -158,5 +148,57 @@ public class GameTest {
         String output = outputStream.toString().trim();
         assertTrue(output.contains("Вы проиграли, допустив много ошибок!"));
     }
+
+    @Test
+    public void testGameLosesAfterExceedingMaxAttempts() {
+        Word testWord = new Word("тест", "подсказка", 1);
+        game.secretWordView = "____";
+        game.errorCount = 3;
+        game.errorMax = 3;
+
+        game.processLetter('к', testWord);
+        game.processLetter('ф', testWord);
+        game.processLetter('з', testWord);
+
+        game.displayEndMessage(testWord);
+        String output = outputStream.toString().trim();
+        assertTrue(output.contains("Вы проиграли, допустив много ошибок!"));
+    }
+
+    @Test
+    public void testGameStateChangesOnCorrectAndIncorrectGuesses() {
+        Word testWord = new Word("тест", "подсказка", 1);
+        game.secretWordView = "____";
+        game.errorCount = 0;
+
+        // Угадали букву
+        game.processLetter('т', testWord);
+        assertEquals("т__т", game.secretWordView);
+        assertEquals(0, game.errorCount);  // Ошибок не должно быть
+
+        // Угадали неверную букву
+        game.processLetter('ф', testWord);
+        assertEquals("т__т", game.secretWordView);  // Слово не должно измениться
+        assertEquals(1, game.errorCount);  // Ошибка должна увеличиться
+    }
+
+    @Test
+    public void testInputLongStringPromptsForRetry() {
+        Word secretWord = new Word("тест", "подсказка", 1);
+        game.secretWordView = "____";
+        String input = "неверный ввод";
+        ui = new UserInterface(new PrintStream(outputStream)) {
+            @Override
+            public String getInput(String prompt) {
+                return input;
+            }
+        };
+        boolean result = game.processInput(input, secretWord);
+
+        assertFalse(result);
+        assertEquals("____", game.secretWordView);
+        assertEquals(0, game.errorCount);
+    }
+
 
 }

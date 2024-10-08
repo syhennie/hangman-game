@@ -7,25 +7,14 @@ import java.util.Random;
 import java.util.Set;
 
 public class Game {
-    private static final int EASY_ATTEMPTS = 6;
-    private static final int MEDIUM_ATTEMPTS = 4;
-    private static final int HARD_ATTEMPTS = 3;
-    private static final String ZERO = "ZERO";
-    private static final String ONE = "ONE";
-    private static final String TWO = "TWO";
-    private static final String THREE = "THREE";
-    private static final String FOUR = "FOUR";
-    private static final String FIVE = "FIVE";
-    private static final String SIX = "SIX";
-    private static final String SEVEN = "SEVEN";
+    private static final int ATTEMPTS = 7;
     protected int errorCount;
     protected int errorMax;
     protected final List<Character> errorChar;
     protected String secretWordView;
-    protected Scaffold scaffold;
+    protected Scaffold scaffold = new Scaffold();
     private final UserInterface ui;
     protected final WordRepository wordRepository;
-    protected String[] scaffoldStates;
     private boolean hintShown;
     private static final List<String> ALL_DIFFICULTY = List.of("легкий", "средний", "сложный");
 
@@ -80,30 +69,6 @@ public class Game {
         return chooseOption(new HashSet<>(ALL_DIFFICULTY), "Выберите уровень сложности");
     }
 
-
-    public int getAttemptsForDifficulty(String difficulty) {
-        int index = ALL_DIFFICULTY.indexOf(difficulty);
-        return switch (index) {
-            case 1 -> MEDIUM_ATTEMPTS;
-            case 2 -> HARD_ATTEMPTS;
-            default -> EASY_ATTEMPTS;
-        };
-    }
-
-    void setScaffoldStates(String difficulty) {
-        if (difficulty.equals(ALL_DIFFICULTY.getFirst())) {
-            scaffoldStates = new String[] {ZERO, ONE, TWO, THREE, FOUR, FIVE, SIX, SEVEN};
-        } else if (difficulty.equals(ALL_DIFFICULTY.get(1))) {
-            scaffoldStates = new String[] {TWO, FOUR, FIVE, SIX, SEVEN};
-        } else {
-            scaffoldStates = new String[] {TWO, FIVE, SEVEN};
-        }
-    }
-
-    protected void updateScaffold() {
-        scaffold = Scaffold.valueOf(scaffoldStates[Math.min(errorCount, scaffoldStates.length - 1)]);
-    }
-
     public void start() {
         printWelcomeMessage();
         String category;
@@ -114,14 +79,15 @@ public class Game {
             return;
         }
         String difficulty = chooseDifficulty();
-        errorMax = getAttemptsForDifficulty(difficulty);
-        setScaffoldStates(difficulty);
+        // errorMax = getAttemptsForDifficulty(difficulty);
+        errorMax = ATTEMPTS;
+
         Word secretWord = chooseRandomWord(category, difficulty);
         secretWordView = "_".repeat(secretWord.word().length());
-        updateScaffold();
 
         while (true) {
-            ui.displayMessage(scaffold.toString());
+            // Отображение текущего состояния игры
+            ui.displayMessage(scaffold.getScaffold(errorCount));
             ui.displayMessage("Загаданное слово:  " + secretWordView);
             ui.displayMessage("Оставшиеся попытки: " + (errorMax - errorCount));
             ui.displayMessage("Ошибки  (" + errorCount + "): " + errorChar);
@@ -176,7 +142,6 @@ public class Game {
             if (!errorChar.contains(letter)) {
                 errorChar.add(letter);
                 errorCount++;
-                updateScaffold();
             } else {
                 ui.displayMessage("Эта буква уже была использована."); // =)
             }
@@ -189,7 +154,7 @@ public class Game {
         if (errorCount < errorMax) {
             ui.displayMessage("Поздравляем! Вы выиграли!\n");
         } else {
-            ui.displayMessage(Scaffold.valueOf(scaffoldStates[scaffoldStates.length - 1]).toString());
+            ui.displayMessage(scaffold.getScaffold(errorCount));
             ui.displayMessage("Вы проиграли, допустив много ошибок!\n");
         }
     }

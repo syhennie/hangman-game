@@ -1,110 +1,31 @@
 package backend.academy.hangman;
 
-public enum Scaffold {
-    ZERO {
-        @Override
-        public String toString() {
-            return """
-                     _______
-                     |/
-                     |
-                     |
-                     |
-                     |
-                    _|_""";
-        }
-    },
-    ONE {
-        @Override
-        public String toString() {
-            return """
-                     _______
-                     |/    |
-                     |
-                     |
-                     |
-                     |
-                    _|_""";
-        }
-    },
-    TWO {
-        @Override
-        public String toString() {
-            return """
-                     _______
-                     |/    |
-                     |     O
-                     |
-                     |
-                     |
-                    _|_""";
-        }
-    },
-    THREE {
-        @Override
-        public String toString() {
-            return """
-                     _______
-                     |/    |
-                     |     O
-                     |     |
-                     |
-                     |
-                    _|_""";
-        }
-    },
-    FOUR {
-        @Override
-        public String toString() {
-            return """
-                     _______
-                     |/    |
-                     |     O
-                     |    /|
-                     |
-                     |
-                    _|_""";
-        }
-    },
-    FIVE {
-        @Override
-        public String toString() {
-            return """
-                     _______
-                     |/    |
-                     |     O
-                     |    /|\\
-                     |
-                     |
-                    _|_""";
-        }
-    },
-    SIX {
-        @Override
-        public String toString() {
-            return """
-                     _______
-                     |/    |
-                     |     O
-                     |    /|\\
-                     |    /
-                     |
-                    _|_""";
-        }
-    },
-    SEVEN {
-        @Override
-        public String toString() {
-            return """
-                     _______
-                     |/    |
-                     |     O
-                     |    /|\\
-                     |    / \\
-                     |
-                    _|_""";
-        }
+public class Scaffold {
+    private static final int ACCESS_ERROR = 8;
+    private final String[] scaffoldState = new String[ACCESS_ERROR];
+
+    // CHECKSTYLE:OFF
+    public Scaffold() {
+        int i = 0;
+        scaffoldState[i] = "  ________" + '\n'
+            + "  |/      " + '\n'
+            + "  |       " + '\n'
+            + "  |        " + '\n'
+            + "  |         " + '\n'
+            + "  |          " + '\n'
+            + "__|__      " + '\n';
+
+        scaffoldState[++i] = scaffoldState[i - 1].replace("  |/      " + '\n', "  |      |" + '\n');
+        scaffoldState[++i] = scaffoldState[i - 1].replace("  |       " + '\n', "  |      O" + '\n');
+        scaffoldState[++i] = scaffoldState[i - 1].replace("  |        " + '\n', "  |      | " + '\n');
+        scaffoldState[++i] = scaffoldState[i - 1].replace("  |      | " + '\n', "  |     /| " + '\n');
+        scaffoldState[++i] = scaffoldState[i - 1].replace("  |     /| " + '\n', "  |     /|\\ " + '\n');
+        scaffoldState[++i] = scaffoldState[i - 1].replace("  |         " + '\n', "  |     / " + '\n');
+        scaffoldState[++i] = scaffoldState[i - 1].replace("  |     / " + '\n', "  |     / \\ " + '\n');
     }
 
-
+    // CHECKSTYLE:ON
+    public String getScaffold(int errorCount) {
+        return scaffoldState[errorCount];
+    }
 }
