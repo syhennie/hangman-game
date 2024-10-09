@@ -7,6 +7,14 @@ public record Word(String word, String hint, int difficulty) {
         }
     }
 
+    public int getDifficulty() {
+        return difficulty;
+    }
+
+    public String word() {
+        return word;
+    }
+
     @Override
     public String toString() {
         return "Word{"

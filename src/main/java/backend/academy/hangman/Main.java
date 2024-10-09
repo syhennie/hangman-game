@@ -1,7 +1,5 @@
-package backend.academy;
+package backend.academy.hangman;
 
-import backend.academy.hangman.Game;
-import backend.academy.hangman.UserInterface;
 import lombok.experimental.UtilityClass;
 
 @UtilityClass

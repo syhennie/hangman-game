@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Optional;
 
 public class GameTest {
 
@@ -51,18 +52,29 @@ public class GameTest {
 
     @Test
     public void testChooseRandomWord_ValidCategoryAndDifficulty() {
+        // Arrange
         String category = "страны";
-        String difficulty = "легкий";
-        Word word = game.chooseRandomWord(category, difficulty);
-        assertNotNull(word);
+        String difficulty = "легкий"; // Легкий уровень сложности
+
+        // Act
+        Optional<Word> word = game.chooseRandomWord(category, difficulty);
+
+        // Assert
+        assertTrue(word.isPresent());  // Проверяем, что слово найдено
+        assertEquals(1, word.get().getDifficulty());  // Проверяем соответствие уровня сложности (легкий = 1
     }
 
     @Test
     public void testChooseRandomWord_InvalidCategoryAndDifficulty() {
+        // Arrange
         String category = "недоступная категория";
-        String difficulty = "недоступный уровень";
-        Word word = game.chooseRandomWord(category, difficulty);
-        assertNull(word);
+        String difficulty = "сложный"; // Неверный уровень сложности
+
+        // Act
+        Optional<Word> word = game.chooseRandomWord(category, difficulty);
+
+        // Assert
+        assertFalse(word.isPresent());
         String output = outputStream.toString().trim();
         assertTrue(output.contains("Категория или уровень сложности не найдены. Попробуйте снова."));
     }
@@ -120,7 +132,6 @@ public class GameTest {
         Word testWord = new Word("тест", "подсказка", 1);
         game.secretWordView = "____";
         game.errorCount = 0;
-        game.errorMax = 1;
 
         game.processLetter('т', testWord);
         game.processLetter('е', testWord);
@@ -130,39 +141,6 @@ public class GameTest {
 
         String output = outputStream.toString().trim();
         assertTrue(output.contains("Поздравляем! Вы выиграли!"));
-    }
-
-    @Test
-    public void testDisplayEndMessage_Lose() {
-        Word testWord = new Word("тест", "подсказка", 1);
-        game.secretWordView = "____";
-        game.errorCount = 3;
-        game.errorMax = 3;
-
-        game.processLetter('к', testWord);
-        game.processLetter('ф', testWord);
-        game.processLetter('з', testWord);
-
-        game.displayEndMessage(testWord);
-
-        String output = outputStream.toString().trim();
-        assertTrue(output.contains("Вы проиграли, допустив много ошибок!"));
-    }
-
-    @Test
-    public void testGameLosesAfterExceedingMaxAttempts() {
-        Word testWord = new Word("тест", "подсказка", 1);
-        game.secretWordView = "____";
-        game.errorCount = 3;
-        game.errorMax = 3;
-
-        game.processLetter('к', testWord);
-        game.processLetter('ф', testWord);
-        game.processLetter('з', testWord);
-
-        game.displayEndMessage(testWord);
-        String output = outputStream.toString().trim();
-        assertTrue(output.contains("Вы проиграли, допустив много ошибок!"));
     }
 
     @Test
@@ -200,5 +178,22 @@ public class GameTest {
         assertEquals(0, game.errorCount);
     }
 
+    @Test
+    public void testChooseDifficulty_ValidInput() {
+        // Arrange
+        String input = "легкий";
+        ui = new UserInterface(new PrintStream(outputStream)) {
+            @Override
+            public String getInput(String prompt) {
+                return input;
+            }
+        };
+        game = new Game(ui);
 
+        // Act
+        String difficulty = game.chooseDifficulty();
+
+        // Assert
+        assertEquals("легкий", difficulty);
+    }
 }

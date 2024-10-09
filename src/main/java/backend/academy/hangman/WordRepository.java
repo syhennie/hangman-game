@@ -3,6 +3,7 @@ package backend.academy.hangman;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
@@ -85,7 +86,7 @@ public class WordRepository {
         return wordCategories.keySet();
     }
 
-    public Word getRandomWordByCategoryAndDifficulty(String category, String difficulty) {
+    public Optional<Word> getRandomWordByCategoryAndDifficulty(String category, String difficulty) {
         List<Word> words = wordCategories.get(category);
         if (words != null) {
             int level = switch (difficulty.toLowerCase()) {
@@ -98,10 +99,11 @@ public class WordRepository {
                 .filter(word -> word.difficulty() == level)
                 .toList();
             if (!filteredWords.isEmpty()) {
-                return filteredWords.get(random.nextInt(filteredWords.size()));
+                return Optional.of(filteredWords.get(random.nextInt(filteredWords.size())));
             }
         }
-        return null;
+
+        return Optional.empty();
     }
 
 }

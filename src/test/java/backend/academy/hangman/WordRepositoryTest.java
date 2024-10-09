@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,9 +48,9 @@ class WordRepositoryTest {
     void testGetRandomWordByCategoryAndDifficulty_ReturnsWordOfSpecifiedDifficulty() {
         String category = "технологии";
         String difficulty = "легкий";
-        Word randomWord = wordRepository.getRandomWordByCategoryAndDifficulty(category, difficulty);
+        Optional<Word> randomWord = wordRepository.getRandomWordByCategoryAndDifficulty(category, difficulty);
         assertNotNull(randomWord, "Случайное слово не должно быть null");
-        assertEquals(WordRepository.EASY_LVL, randomWord.difficulty(), "Слово должно быть легким");
+        assertEquals(WordRepository.EASY_LVL, randomWord.get().difficulty(), "Слово должно быть легким");
     }
 
     @Test

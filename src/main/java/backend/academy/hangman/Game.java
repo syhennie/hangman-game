@@ -3,11 +3,12 @@ package backend.academy.hangman;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 
 public class Game {
-    private static final int ATTEMPTS = 7;
+    protected static final int ATTEMPTS = 7;
     protected int errorCount;
     protected int errorMax;
     protected final List<Character> errorChar;
@@ -30,12 +31,14 @@ public class Game {
         ui.displayMessage("Добро пожаловать в игру Виселица!");
     }
 
-    public Word chooseRandomWord(String category, String difficulty) {
-        Word randomWord = wordRepository.getRandomWordByCategoryAndDifficulty(category, difficulty);
-        if (randomWord == null) {
+    public Optional<Word> chooseRandomWord(String category, String difficulty) {
+        Optional<Word> randomWord = wordRepository.getRandomWordByCategoryAndDifficulty(category, difficulty);
+
+        if (randomWord.isEmpty()) {
             ui.displayMessage("Категория или уровень сложности не найдены. Попробуйте снова.");
-            return null;
+            return Optional.empty();
         }
+
         return randomWord;
     }
 
@@ -79,17 +82,20 @@ public class Game {
             return;
         }
         String difficulty = chooseDifficulty();
-        // errorMax = getAttemptsForDifficulty(difficulty);
-        errorMax = ATTEMPTS;
 
-        Word secretWord = chooseRandomWord(category, difficulty);
+        Optional<Word> optionalSecretWord = chooseRandomWord(category, difficulty);
+        if (optionalSecretWord.isEmpty()) {
+            ui.displayMessage("Не удалось выбрать слово. Игра завершена.");
+        }
+
+        Word secretWord = optionalSecretWord.get();
         secretWordView = "_".repeat(secretWord.word().length());
 
         while (true) {
             // Отображение текущего состояния игры
             ui.displayMessage(scaffold.getScaffold(errorCount));
             ui.displayMessage("Загаданное слово:  " + secretWordView);
-            ui.displayMessage("Оставшиеся попытки: " + (errorMax - errorCount));
+            ui.displayMessage("Оставшиеся попытки: " + (ATTEMPTS - errorCount));
             ui.displayMessage("Ошибки  (" + errorCount + "): " + errorChar);
             ui.displayMessage("Введите букву или ! для показа подсказки:");
             String input = ui.getInput("").toLowerCase();
@@ -101,7 +107,7 @@ public class Game {
                 if (!secretWordView.contains("_")) {
                     break;
                 }
-                if (errorCount >= errorMax) {
+                if (errorCount >= ATTEMPTS) {
                     break;
                 }
             }
@@ -151,7 +157,7 @@ public class Game {
 
     protected void displayEndMessage(Word secretWord) {
         ui.displayMessage("\nЗагаданное слово: " + secretWord.word());
-        if (errorCount < errorMax) {
+        if (errorCount < ATTEMPTS) {
             ui.displayMessage("Поздравляем! Вы выиграли!\n");
         } else {
             ui.displayMessage(scaffold.getScaffold(errorCount));
