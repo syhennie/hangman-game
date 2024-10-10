@@ -10,7 +10,6 @@ import java.util.Set;
 public class Game {
     protected static final int ATTEMPTS = 7;
     protected int errorCount;
-    protected int errorMax;
     protected final List<Character> errorChar;
     protected String secretWordView;
     protected Scaffold scaffold = new Scaffold();
